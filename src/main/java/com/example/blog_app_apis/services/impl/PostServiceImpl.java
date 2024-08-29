@@ -1,16 +1,19 @@
 package com.example.blog_app_apis.services.impl;
 
 import com.example.blog_app_apis.config.AppConstants;
+import com.example.blog_app_apis.entities.Activity;
 import com.example.blog_app_apis.entities.Category;
 import com.example.blog_app_apis.entities.Post;
 import com.example.blog_app_apis.entities.User;
 import com.example.blog_app_apis.exceptions.ResourceNotFoundException;
 import com.example.blog_app_apis.payloads.PostDto;
-import com.example.blog_app_apis.payloads.PostResponse;
+import com.example.blog_app_apis.payloads.PaginatedApiResponse;
+import com.example.blog_app_apis.repositories.ActivityRepo;
 import com.example.blog_app_apis.repositories.CategoryRepo;
 import com.example.blog_app_apis.repositories.PostRepo;
 import com.example.blog_app_apis.repositories.UserRepo;
 import com.example.blog_app_apis.services.PostService;
+import com.example.blog_app_apis.services.SecurityService;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -19,6 +22,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -36,31 +40,56 @@ public class PostServiceImpl implements PostService {
     private UserRepo userRepo;
 
     @Autowired
+    private SecurityService securityService; // Inject the SecurityService
+
+    @Autowired
+    private ActivityRepo activityRepo;
+
+
+    @Autowired
     private CategoryRepo categoryRepo;
 
-    @Override
-    public PostDto createPost(PostDto postDto, String userId, String categoryId) { //String userId, String categoryId
 
-        User user = userRepo.findById(userId).orElseThrow(() -> new ResourceNotFoundException("User","User id", userId));
+    @Override
+    public PostDto createPost(PostDto postDto, User user, String categoryId,boolean isDraft, Date scheduledPublishTime) { //String userId, String categoryId
 
         Category category = categoryRepo.findById(categoryId).orElseThrow(() -> new ResourceNotFoundException("Category", "category id", categoryId));
 
-
         Post post = modelMapper.map(postDto,Post.class);
         post.setImageName("default.png");
-        post.setAddedDate(new Date());
+
+        // Set the draft status and scheduled publish time
+        post.setDraft(isDraft);
+        post.setScheduledPublishTime(scheduledPublishTime);
+
+        // If not a draft and no scheduled time is provided, publish immediately
+        if (!isDraft && scheduledPublishTime == null) {
+            post.setAddedDate(new Date());
+        }
 
         // Set the User and Category objects in the Post entity
         post.setUser(user);
         post.setCategory(category);
 
         Post savedPost = postRepo.save(post);
+
+        // Create an activity record
+        Activity activity = new Activity();
+        activity.setUserId(user.getId());
+        activity.setAction("CREATE_POST");
+        activity.setType("POST");
+        activity.setTargetId(savedPost.getPostId());
+        activity.setTimestamp(LocalDateTime.now());
+
+        activityRepo.save(activity);
+
         PostDto savedPostDto = modelMapper.map(savedPost, PostDto.class);
 
         return savedPostDto;
     }
 
     @Override
+    //@CachePut(value="posts", key="#postId")
     public PostDto updatePost(PostDto postDto, String postId) {
         Post post = postRepo.findById(postId).orElseThrow(() -> new ResourceNotFoundException("Post","post id",postId));
         post.setTitle(postDto.getTitle());
@@ -69,17 +98,32 @@ public class PostServiceImpl implements PostService {
 
         Post updatedPost = postRepo.save(post);
 
+        // Create an activity record
+        User currentUser = securityService.getCurrentUser();
+
+        Activity activity = new Activity();
+        activity.setUserId(currentUser.getId());
+        activity.setAction("UPDATE_POST");
+        activity.setType("POST");
+        activity.setTargetId(updatedPost.getPostId());
+        activity.setTimestamp(LocalDateTime.now());
+
+        activityRepo.save(activity);
+
         return modelMapper.map(updatedPost,PostDto.class);
     }
 
     @Override
+//    @Transactional
+//    @CacheEvict(value = "posts", key = "#postId")
     public void deletePost(String postId) {
         Post post = postRepo.findById(postId).orElseThrow(() -> new ResourceNotFoundException("Post","post id",postId));
         postRepo.delete(post);
     }
 
     @Override
-    public PostResponse getAllPost(Integer pageNumber, Integer pageSize,String sortBy,String sortDir) {
+    //@Cacheable(value = "posts")
+    public PaginatedApiResponse getAllPost(Integer pageNumber, Integer pageSize, String sortBy, String sortDir) {
 
         Sort sort=null;
         if(sortDir.equalsIgnoreCase(AppConstants.SORT_DIR)) {
@@ -98,18 +142,19 @@ public class PostServiceImpl implements PostService {
         //List<Post> allPosts = this.postRepo.findAll();
         List<PostDto> postDtos = allPosts.stream().map((post) -> modelMapper.map(post,PostDto.class)).collect(Collectors.toList());
 
-        PostResponse postResponse = new PostResponse();
-        postResponse.setContent(postDtos);
-        postResponse.setPageNumber(pagePost.getNumber());
-        postResponse.setPageSize(pagePost.getSize());
-        postResponse.setTotalElements(pagePost.getTotalElements());
-        postResponse.setTotalPages(pagePost.getTotalPages());
-        postResponse.setLastPage(pagePost.isLast());
+        PaginatedApiResponse paginatedApiResponse = new PaginatedApiResponse();
+        paginatedApiResponse.setContent(postDtos);
+        paginatedApiResponse.setPageNumber(pagePost.getNumber());
+        paginatedApiResponse.setPageSize(pagePost.getSize());
+        paginatedApiResponse.setTotalElements(pagePost.getTotalElements());
+        paginatedApiResponse.setTotalPages(pagePost.getTotalPages());
+        paginatedApiResponse.setLastPage(pagePost.isLast());
 
-        return postResponse;
+        return paginatedApiResponse;
     }
 
     @Override
+    //@Cacheable(value = "posts", key = "#postId")
     public PostDto getPostById(String postId) {
         Post post = postRepo.findById(postId).orElseThrow(() -> new ResourceNotFoundException("Post", "post id", postId));
 
@@ -146,4 +191,19 @@ public class PostServiceImpl implements PostService {
 
         return postDtos;
     }
+
+
+    //    This method will check if the authenticated user is the owner of the post.
+    public boolean isPostOwner(String postId) {
+        // Get the current authenticated user
+        User currentUser = securityService.getCurrentUser();
+
+        // Fetch the post from the database using the postId
+        Post post = postRepo.findById(postId)
+                .orElseThrow(() -> new ResourceNotFoundException("Post", "post id", postId));
+
+        // Check if the current user's ID matches the ID of the user who created the post
+        return post.getUser().getId().equals(currentUser.getId());
+    }
+
 }

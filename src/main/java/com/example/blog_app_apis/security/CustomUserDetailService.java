@@ -4,10 +4,15 @@ import com.example.blog_app_apis.entities.User;
 import com.example.blog_app_apis.exceptions.ResourceNotFoundException;
 import com.example.blog_app_apis.repositories.UserRepo;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class CustomUserDetailService implements UserDetailsService {
@@ -21,6 +26,8 @@ public class CustomUserDetailService implements UserDetailsService {
 
         // load user from database by username
         User user = userRepo.findByEmail(username).orElseThrow(() -> new ResourceNotFoundException("User","email",username));
+
+
         return user;
     }
 }

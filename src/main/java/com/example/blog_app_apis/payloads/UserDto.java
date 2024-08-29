@@ -9,6 +9,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.Set;
+
 
 @NoArgsConstructor
 @Getter
@@ -32,4 +34,7 @@ public class UserDto {
 
     @NotEmpty(message = "About cannot be empty")
     private String about;
+
+    private Set<String> roles;  // Add this field to store role names
+
 }

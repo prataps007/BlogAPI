@@ -1,12 +1,12 @@
 package com.example.blog_app_apis.repositories;
 
-import com.example.blog_app_apis.entities.Category;
 import com.example.blog_app_apis.entities.Post;
-import com.example.blog_app_apis.entities.User;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.List;
 
 @Repository
@@ -20,4 +20,7 @@ public interface PostRepo extends MongoRepository<Post,String> {
     List<Post> findByCategoryId(String categoryId);
 
     List<Post> findByTitleContaining(String title);
+
+    // for draft post publishing
+    List<Post> findAllByIsDraftTrueAndScheduledPublishTimeBeforeAndAddedDateIsNull(Date now);
 }

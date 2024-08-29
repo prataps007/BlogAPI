@@ -1,20 +1,29 @@
 package com.example.blog_app_apis.services.impl;
 
+import com.example.blog_app_apis.config.AppConstants;
 import com.example.blog_app_apis.entities.Role;
 import com.example.blog_app_apis.entities.User;
 import com.example.blog_app_apis.exceptions.ResourceNotFoundException;
+import com.example.blog_app_apis.payloads.PaginatedApiResponse;
 import com.example.blog_app_apis.payloads.UserDto;
 import com.example.blog_app_apis.repositories.RoleRepo;
 import com.example.blog_app_apis.repositories.UserRepo;
 import com.example.blog_app_apis.services.UserService;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Collectors;
+
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -79,11 +88,36 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public List<UserDto> getAllUsers() {
-        List<User> users = userRepo.findAll();
-        List<UserDto> userDtos = users.stream().map(this::userToDto).toList();
+    public PaginatedApiResponse getAllUsers(Integer pageNumber, Integer pageSize, String sortBy, String sortDir) {
 
-        return userDtos;
+        Sort sort=null;
+        if(sortDir.equalsIgnoreCase(AppConstants.SORT_DIR)) {
+            sort=Sort.by(sortBy).ascending();
+        }
+        else{
+            sort = Sort.by(sortBy).descending();
+        }
+
+        Pageable pageable = PageRequest.of(pageNumber, pageSize, sort);
+
+
+        Page<User> pageUser = userRepo.findAll(pageable);
+        List<User> allUsers = pageUser.getContent();
+        List<UserDto> userDtos = allUsers.stream().map((user) -> modelMapper.map(user,UserDto.class)).collect(Collectors.toList());
+
+//        List<User> users = userRepo.findAll();
+//        List<UserDto> userDtos = users.stream().map(this::userToDto).toList();
+
+        PaginatedApiResponse paginatedApiResponse = new PaginatedApiResponse();
+        paginatedApiResponse.setContent(userDtos);
+        paginatedApiResponse.setPageNumber(pageUser.getNumber());
+        paginatedApiResponse.setPageSize(pageUser.getSize());
+        paginatedApiResponse.setTotalElements(pageUser.getTotalElements());
+        paginatedApiResponse.setTotalPages(pageUser.getTotalPages());
+        paginatedApiResponse.setLastPage(pageUser.isLast());
+
+        //return userDtos;
+        return paginatedApiResponse;
     }
 
     @Override
@@ -94,9 +128,9 @@ public class UserServiceImpl implements UserService {
         this.userRepo.delete(user);
     }
 
-    // assign role to user
+    // assign role to user - only admin has authority to perform this operation
 
-    public User assignRoleToUser(String userId, String roleName) {
+    public UserDto assignRoleToUser(String userId, String roleName) {
         User user = userRepo.findById(userId).orElseThrow(() -> new ResourceNotFoundException("User","Id",userId));
         Role role = roleRepo.findByName(roleName);
         if (role == null) {
@@ -108,6 +142,30 @@ public class UserServiceImpl implements UserService {
             userRepo.save(user);
         }
 
-        return user;
+        // Debug log to check the roles assigned to the user
+        System.out.println("Roles assigned to user: " + user.getRoles());
+
+        UserDto userDto = userToDto(user);
+
+        return userDto;
+    }
+
+    // This method will check if the authenticated user is the owner of the profile being updated:
+    public boolean isProfileOwner(String userId) {
+        // Get the current authenticated user
+        User currentUser = getCurrentUser();
+
+        // Check if the current user's ID matches the ID of the user whose profile is being updated
+        return currentUser.getId().equals(userId);
+    }
+
+    private User getCurrentUser() {
+        // Extract the username from the security context
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+
+        // Fetch the user from the database using the username
+        return userRepo.findByEmail(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "email", username));
     }
 }

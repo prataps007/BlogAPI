@@ -1,5 +1,6 @@
 package com.example.blog_app_apis.config;
 
+import com.example.blog_app_apis.models.RateLimitingFilter;
 import com.example.blog_app_apis.security.JwtAuthenticationEntryPoint;
 import com.example.blog_app_apis.security.JwtAuthenticationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,7 +35,8 @@ public class SecurityConfig {
             "/v2/api-docs",
             "/swagger-resources/**",
             "/swagger-ui/**",
-            "/webjars/**"
+            "/webjars/**",
+            "/ws/**"  // web socket endpoints
     };
     @Autowired
     private UserDetailsService userDetailService;
@@ -44,6 +46,7 @@ public class SecurityConfig {
 
     @Autowired
     private JwtAuthenticationFilter jwtAuthenticationFilter;
+
 
     @Bean
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
@@ -62,6 +65,8 @@ public class SecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS) // Use stateless session management
                 );
 
+        // The RateLimitingFilter is added before the JwtAuthenticationFilter to ensure that rate limiting is applied before any authentication checks.
+        http.addFilterBefore(new RateLimitingFilter(), UsernamePasswordAuthenticationFilter.class);
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         http.authenticationProvider(daoAuthenticationProvider());
         return http.build();

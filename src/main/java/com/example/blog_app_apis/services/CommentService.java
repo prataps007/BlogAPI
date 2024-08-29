@@ -9,7 +9,7 @@ import java.util.List;
 @Service
 public interface CommentService {
 
-    CommentDto createComment(CommentDto commentDto,String postId);
+    CommentDto createComment(CommentDto commentDto,String postId);  //  String userId
     void deleteComment(String commentId);
 
     List<CommentDto> getCommentsByPostId(String postId);

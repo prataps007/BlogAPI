@@ -1,7 +1,8 @@
 package com.example.blog_app_apis.controllers;
 
-import com.example.blog_app_apis.entities.User;
+import com.example.blog_app_apis.config.AppConstants;
 import com.example.blog_app_apis.payloads.ApiResponse;
+import com.example.blog_app_apis.payloads.PaginatedApiResponse;
 import com.example.blog_app_apis.payloads.UserDto;
 import com.example.blog_app_apis.services.UserService;
 
@@ -11,7 +12,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import java.util.List;
 
 
 @RestController
@@ -30,6 +30,8 @@ public class UserController {
     }
 
     // PUT - UPDATE USER
+    // only the same user can update his own profile
+    @PreAuthorize("@userServiceImpl.isProfileOwner(#userId)")
     @PutMapping("/{userId}")
     public ResponseEntity<UserDto> updateUser(@Valid @RequestBody UserDto userDto,@PathVariable String userId){
         UserDto updatedUser = userService.updateUser(userDto,userId);
@@ -38,7 +40,7 @@ public class UserController {
     }
 
     // DELETE - DELETE USER
-    @PreAuthorize("hasRole('ADMIN')")  // only admin can perform this operation
+    @PreAuthorize("hasRole('ROLE_ADMIN') or @userServiceImpl.isProfileOwner(#userId)")  // only admin or the same user can delete user
     @DeleteMapping("/{userId}")
     public ResponseEntity<ApiResponse> deleteUser(@PathVariable String userId){
         userService.deleteUser(userId);
@@ -48,8 +50,15 @@ public class UserController {
 
     // GET - USER GET
     @GetMapping("/")
-    public ResponseEntity<List<UserDto>> getAllUsers(){
-        List<UserDto> users = userService.getAllUsers();
+    public ResponseEntity<PaginatedApiResponse> getAllUsers(@RequestParam(value="pageNumber",defaultValue = AppConstants.PAGE_NUMBER, required = false) Integer pageNumber,
+                                                            @RequestParam(value = "pageSize",defaultValue = AppConstants.PAGE_SIZE, required = false) Integer pageSize,
+                                                            @RequestParam(value="sortBy",defaultValue = AppConstants.SORT_BY, required = false) String sortBy,
+                                                            @RequestParam(value = "sortDir",defaultValue = AppConstants.SORT_DIR, required = false) String sortDir){
+
+        //List<UserDto> users = userService.getAllUsers(pageNumber,pageSize,sortBy,sortDir);
+
+        PaginatedApiResponse users = userService.getAllUsers(pageNumber,pageSize,sortBy,sortDir);
+
         return ResponseEntity.ok(users);
     }
 
@@ -60,8 +69,9 @@ public class UserController {
     }
 
     // Post - assign role to a user
+    @PreAuthorize("hasRole('ROLE_ADMIN')")  // only admin can perform this operation
     @PostMapping("/{userId}/role/{roleName}")
-    public User assignRoleToUser(@PathVariable String userId, @PathVariable String roleName) {
+    public UserDto assignRoleToUser(@PathVariable String userId, @PathVariable String roleName) {
         return userService.assignRoleToUser(userId, roleName);
     }
 }

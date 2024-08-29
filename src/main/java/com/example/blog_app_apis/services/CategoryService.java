@@ -22,4 +22,6 @@ public interface CategoryService {
 
     // get all
     List<CategoryDto> getCategories();
+
+    // get all posts of a category -- implement this service
 }

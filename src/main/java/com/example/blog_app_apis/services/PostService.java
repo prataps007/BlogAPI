@@ -1,17 +1,17 @@
 package com.example.blog_app_apis.services;
 
-import com.example.blog_app_apis.entities.Post;
+import com.example.blog_app_apis.entities.User;
 import com.example.blog_app_apis.payloads.PostDto;
-import com.example.blog_app_apis.payloads.PostResponse;
-import org.springframework.stereotype.Service;
+import com.example.blog_app_apis.payloads.PaginatedApiResponse;
 
+import java.util.Date;
 import java.util.List;
 
 
 public interface PostService {
 
     // create
-    PostDto createPost(PostDto postDto, String userId, String categoryId);  // String userId, String categoryId
+    PostDto createPost(PostDto postDto, User user, String categoryId, boolean isDraft, Date scheduledPublishTime);  // String userId, String categoryId
 
     // update
     PostDto updatePost(PostDto postDto,String postId);
@@ -20,7 +20,7 @@ public interface PostService {
     void deletePost(String postId);
 
     // get all post
-    PostResponse getAllPost(Integer pageNumber, Integer pageSize, String sortBy, String sortDir);
+    PaginatedApiResponse getAllPost(Integer pageNumber, Integer pageSize, String sortBy, String sortDir);
 
     // get single post
     PostDto getPostById(String postId);

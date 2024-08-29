@@ -1,14 +1,17 @@
 package com.example.blog_app_apis.entities;
 
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.cglib.core.Local;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Document(collection = "posts")
@@ -29,6 +32,9 @@ public class Post {
 
     private String imageName;
 
+    private boolean isDraft;
+    private Date scheduledPublishTime;
+
     private Date addedDate;
 
     // Storing references to Category and User Object
@@ -40,8 +46,10 @@ public class Post {
 
 
 //    // Storing references to comments
-    @DBRef
     private List<Comment> comments = new ArrayList<>();
+
+    // storing references to likes
+    private Set<Like> likes = new HashSet<>();
 
 
 }

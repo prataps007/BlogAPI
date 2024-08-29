@@ -55,6 +55,7 @@ public class CategoryServiceImpl implements CategoryService {
         this.categoryRepo.delete(cat);
     }
 
+    // get category by id
     @Override
     public CategoryDto getCategory(String categoryId) {
         Category cat = categoryRepo.findById(categoryId)
@@ -62,6 +63,7 @@ public class CategoryServiceImpl implements CategoryService {
         return this.modelMapper.map(cat, CategoryDto.class);
     }
 
+    // get all categories
     @Override
     public List<CategoryDto> getCategories() {
         List<Category> categories = categoryRepo.findAll();
@@ -69,4 +71,6 @@ public class CategoryServiceImpl implements CategoryService {
                 .map(cat -> this.modelMapper.map(cat, CategoryDto.class))
                 .collect(Collectors.toList());
     }
+
+    // get all posts of a category  -- implement this service
 }

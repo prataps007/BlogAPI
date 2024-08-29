@@ -3,8 +3,8 @@ package com.example.blog_app_apis.payloads;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.springframework.data.mongodb.core.mapping.DBRef;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Getter
@@ -21,11 +21,16 @@ public class PostDto {
 
     private String imageName;
 
+    private boolean isDraft;
+    private Date scheduledPublishTime;
+
     private Date addedDate;
 
     private CategoryDto category;
 
     private UserDto user;
+    //private String user;
 
-    private List<CommentDto> comments = new ArrayList<>();
+    //private List<CommentDto> comments = new ArrayList<>();
+
 }

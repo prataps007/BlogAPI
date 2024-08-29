@@ -39,6 +39,13 @@ public class User implements UserDetails {
     @DBRef
     private List<Post> posts = new ArrayList<>();
 
+    @DBRef
+    private List<Comment> comments = new ArrayList<>();
+
+    private Set<String> followersList = new HashSet<>();  // Users who follow this user
+
+    private Set<String> followingList = new HashSet<>();  // Users whom this user follows
+
     // Storing references to Role documents
     @DBRef
     private Set<Role> roles = new HashSet<>();  // a user can have many roles

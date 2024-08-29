@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,6 +22,7 @@ public class CategoryController {
     private CategoryService categoryService;
 
     // create
+    @PreAuthorize("hasRole('ROLE_ADMIN')")  // only admin can create category
     @PostMapping("/")
     public ResponseEntity<CategoryDto> createCategory(@Valid @RequestBody CategoryDto categoryDto){
         CategoryDto createCategory = categoryService.createCategory(categoryDto);
@@ -28,6 +30,7 @@ public class CategoryController {
     }
 
     // update
+    @PreAuthorize("hasRole('ROLE_ADMIN')")  // only admin can update category
     @PutMapping("/{categoryId}")
     public ResponseEntity<CategoryDto> updateCategory(@Valid @RequestBody CategoryDto categoryDto, @PathVariable String categoryId){
         CategoryDto updatedCategory = categoryService.updateCategory(categoryDto,categoryId);
@@ -35,6 +38,7 @@ public class CategoryController {
     }
 
     // delete
+    @PreAuthorize("hasRole('ROLE_ADMIN')")  // only admin can delete category
     @DeleteMapping("/{categoryId}")
     public ResponseEntity<ApiResponse> deleteCategory(@PathVariable String categoryId){
         categoryService.deleteCategory(categoryId);

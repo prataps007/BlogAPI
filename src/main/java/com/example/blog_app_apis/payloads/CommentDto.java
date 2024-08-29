@@ -10,5 +10,10 @@ import lombok.Setter;
 public class CommentDto {
 
     private String id; // Changed to String to match MongoDB ObjectId
+
     private String content;
+
+   // private PostDto post;
+
+    private UserDto user;
 }

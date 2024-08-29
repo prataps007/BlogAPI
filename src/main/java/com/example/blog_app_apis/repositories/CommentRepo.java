@@ -7,4 +7,5 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface CommentRepo extends MongoRepository<Comment, String> {
 
+
 }

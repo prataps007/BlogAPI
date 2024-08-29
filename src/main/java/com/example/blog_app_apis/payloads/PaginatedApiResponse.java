@@ -9,9 +9,10 @@ import java.util.List;
 @Getter
 @Setter
 @NoArgsConstructor
-public class PostResponse {
+public class PaginatedApiResponse {
 
-    private List<PostDto> content;
+//    private List<PostDto> content;
+    private List<?> content;
     private int pageNumber;
     private int pageSize;
     private long totalElements;

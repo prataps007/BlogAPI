@@ -27,6 +27,6 @@ It also features rate limiting, caching, activity logging, and real-time notific
 - **MongoDB (configurable)**
 - **Redis (for caching)**
 - **Spring WebSockets (for real-time communication)**
-- **Machine Learning Integration** (TensorFlow or custom model for moderation)
+- **Google Analytics API** (for moderation)
 - **Swagger** (for API documentation)
 

@@ -6,6 +6,7 @@ import com.example.blog_app_apis.security.JwtAuthenticationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -47,6 +48,9 @@ public class SecurityConfig {
     @Autowired
     private JwtAuthenticationFilter jwtAuthenticationFilter;
 
+    @Autowired
+    private RedisTemplate<String, Object> redisTemplate;
+
 
     @Bean
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
@@ -66,7 +70,7 @@ public class SecurityConfig {
                 );
 
         // The RateLimitingFilter is added before the JwtAuthenticationFilter to ensure that rate limiting is applied before any authentication checks.
-        http.addFilterBefore(new RateLimitingFilter(), UsernamePasswordAuthenticationFilter.class);
+        http.addFilterBefore(new RateLimitingFilter(redisTemplate), UsernamePasswordAuthenticationFilter.class);
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         http.authenticationProvider(daoAuthenticationProvider());
         return http.build();
